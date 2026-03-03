@@ -1,0 +1,625 @@
+<!DOCTYPE html><html><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Startup Life Game</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#0a0a1a;overflow-x:hidden}</style>
+</head><body><div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script type="text/babel">
+const{useState,useCallback,useRef,useEffect}=React;
+
+
+const BACKGROUNDS = [
+  { id:"rural",name:"农村家庭",icon:"🌾",desc:"父母务农，家境贫寒。你是全村的希望。",cash:30000,connections:5,trait:"吃苦耐劳",traitDesc:"逆境中额外坚韧",color:"#8B7355" },
+  { id:"town",name:"小镇普通家庭",icon:"🏘️",desc:"父母是小镇普通工薪族。你梦想去大城市闯荡。",cash:80000,connections:15,trait:"脚踏实地",traitDesc:"决策更稳健",color:"#7B9E6B" },
+  { id:"teacher",name:"知识分子家庭",icon:"👨‍🏫",desc:"父母是大学教授，书香门第。",cash:150000,connections:30,trait:"学术人脉",traitDesc:"技术招聘有优势",color:"#5B8DBE" },
+  { id:"shop",name:"个体户家庭",icon:"🏪",desc:"父母经营小店，你从小懂生意之道。",cash:200000,connections:35,trait:"商业直觉",traitDesc:"经营决策更精准",color:"#D4A053" },
+  { id:"civil",name:"公务员家庭",icon:"👔",desc:"父母体制内工作，家庭稳定有资源。",cash:250000,connections:45,trait:"政商资源",traitDesc:"政策事件有优势",color:"#6B7B8D" },
+  { id:"executive",name:"企业高管家庭",icon:"💼",desc:"父亲是上市公司副总裁，见过大世面。",cash:500000,connections:65,trait:"精英圈层",traitDesc:"融资招人更容易",color:"#8B6BAE" },
+  { id:"business",name:"企业主家庭",icon:"🏭",desc:"家族经营中型企业，资源丰富但期望高。",cash:1000000,connections:80,trait:"家族资源",traitDesc:"起步资源丰富",color:"#C0392B" },
+  { id:"demolition",name:"拆迁户家庭",icon:"🏗️",desc:"拆迁一夜暴富，钱多但没商业经验。",cash:2000000,connections:10,trait:"暴富心态",traitDesc:"资金充裕但易冲动",color:"#E67E22" },
+  { id:"overseas",name:"海归家庭",icon:"🌏",desc:"父母留学海外，你有国际视野但不接地气。",cash:400000,connections:40,trait:"国际视野",traitDesc:"海外市场有优势",color:"#2E86C1" },
+  { id:"artist",name:"文艺家庭",icon:"🎨",desc:"父亲画家母亲作家，你有超强创意审美。",cash:60000,connections:25,trait:"创意天赋",traitDesc:"产品设计有优势",color:"#A569BD" },
+];
+
+const INDUSTRIES = [
+  { id:"ai",name:"AI人工智能",icon:"🤖",desc:"大模型、AI应用、智能硬件",difficulty:"⭐⭐⭐",hot:true },
+  { id:"ecommerce",name:"电商零售",icon:"🛒",desc:"跨境电商、直播带货、新零售",difficulty:"⭐⭐" },
+  { id:"food",name:"餐饮连锁",icon:"🍜",desc:"奶茶、火锅、预制菜、咖啡",difficulty:"⭐⭐" },
+  { id:"education",name:"在线教育",icon:"📚",desc:"知识付费、职业培训",difficulty:"⭐⭐⭐" },
+  { id:"game",name:"游戏娱乐",icon:"🎮",desc:"手游、独立游戏、元宇宙",difficulty:"⭐⭐⭐" },
+  { id:"health",name:"大健康",icon:"💊",desc:"互联网医疗、健身",difficulty:"⭐⭐⭐" },
+  { id:"fintech",name:"金融科技",icon:"💳",desc:"支付、区块链、智能投顾",difficulty:"⭐⭐⭐⭐" },
+  { id:"newenergy",name:"新能源",icon:"⚡",desc:"充电桩、储能、光伏",difficulty:"⭐⭐⭐⭐" },
+  { id:"media",name:"自媒体MCN",icon:"📱",desc:"短视频、直播、网红经纪",difficulty:"⭐" },
+  { id:"saas",name:"企业SaaS",icon:"☁️",desc:"CRM、ERP、协作工具",difficulty:"⭐⭐⭐" },
+  { id:"logistics",name:"物流配送",icon:"🚚",desc:"即时配送、智慧物流",difficulty:"⭐⭐⭐" },
+  { id:"realestate",name:"房产科技",icon:"🏠",desc:"智慧社区、长租公寓",difficulty:"⭐⭐⭐⭐" },
+  { id:"travel",name:"旅游出行",icon:"✈️",desc:"民宿、旅游定制",difficulty:"⭐⭐" },
+  { id:"pet",name:"宠物经济",icon:"🐱",desc:"宠物食品、医疗",difficulty:"⭐⭐" },
+  { id:"fashion",name:"时尚潮牌",icon:"👗",desc:"设计师品牌、潮玩",difficulty:"⭐⭐" },
+  { id:"space",name:"商业航天",icon:"🚀",desc:"卫星、太空旅游",difficulty:"⭐⭐⭐⭐⭐" },
+  { id:"biotech",name:"生物科技",icon:"🧬",desc:"基因检测、新药研发",difficulty:"⭐⭐⭐⭐⭐" },
+];
+
+const STAGES=[{name:"车库创业",icon:"🏚️",m:0},{name:"种子期",icon:"🌱",m:3},{name:"成长期",icon:"🌿",m:8},{name:"扩张期",icon:"🚀",m:15},{name:"成熟期",icon:"🏢",m:24},{name:"IPO冲刺",icon:"🔔",m:30}];
+const COMP_POOL={ai:["灵犀智能","天问大模型","觉醒AI","星脉科技","深维智算","幻方智能","拓元科技","知源大数据","神策智脑","图灵新锐"],ec:["闪买优选","趣拼商城","万物严选","鲸选好物","云集优品","快淘联盟","橙心优购","惠买全球","淘鲸跨境","星罗直播"],food:["茶颜悦舍","鲜萃时光","炭火青年","辣斗士","满杯鲜果","酥小匠","面大师","煲仔记","卤味研究所","壹杯茶坊"],edu:["启航在线","智学云端","师说课堂","博思优课","精进学社","萤火虫课堂","小鹿学堂","破壳教育","知行公开课","学海导航"],game:["幻境互娱","星陨工作室","墨刃游戏","赤焰网络","银翼数码","梦核科技","云渊游戏","像素风暴","极光互动","浮光娱乐"],hp:["杏仁健康","脉动在线","禾心理","绿萝健身","康途医疗","暖阳心理","元气优选","芒果营养","悦活科技","仁和云医"],fin:["钱塘数科","汇信通","融汇智投","链上金服","惠普金融","数联征信","智富科技","云钱包","盈通支付","鼎新资管"],ne:["绿驰充电","启明储能","朝阳光伏","远景新能","华电云储","碳中和科技","聚能电气","青峰锂电","星辉新能","旭日电力"],media:["浪花传媒","造浪文化","繁星MCN","橘子映画","顶流工场","潮声娱乐","燃点文化","萤火传播","聚光传媒","微澜影视"],saas:["飞梭协作","云脉CRM","协力办公","织信平台","明道云端","简道科技","轻流系统","伙伴云","黑帕云","速融办公"],log:["蜂鸟急送","飞豹物流","闪鹿配送","云象仓储","疾风快运","骏马同城","智象物联","鲸运科技","飞鹤快递","速达帮"],re:["安居云","筑梦空间","优居科技","乐巢公寓","智屋平台","寓见未来","房源通","虚拟看房","居安科技","城宿生活"],tr:["游侠旅行","云端民宿","漫步定制","青柠出行","悠途旅居","轻舟假日","风行旅拍","远方驿站","乐旅科技","随心飞"],pet:["萌宝乐园","汪星球","毛孩子医馆","宠友圈","乖乖宠物","尾巴科技","爱宠优选","毛绒星球","喵呜健康","宠膳坊"],fa:["潮核工厂","原创集合","设界联盟","独角兽潮牌","玩物志","格调实验室","造梦工坊","怪诞时尚","型格联名","先锋衣橱"],sp:["云霄航天","星轨科技","天穹动力","苍穹航空","穿云火箭","银星卫通","深空探索","浩瀚航天","太初火箭","星渊科技"],bio:["碧源基因","慧药科技","瑞合生物","精锐医药","基因密码","新芽制药","华锐生科","元素生物","锐博基因","拓新医药"]};
+const COMP_FB=["锐创科技","华兴互联","鼎峰创新","源点数据","启元集团","云帆科技","天际实验室","智远网络","星图创投","恒源创新"];
+
+// ===== LIFESTYLE WITH REAL BRANDS & PRICES =====
+const HOUSING_TIERS = [
+  { tier:"合租",icon:"🛏️",repB:0,connB:0,items:[
+    {name:"城中村床位",cost:0,desc:"六人间上下铺，共用卫生间"},
+  ]},
+  { tier:"租房",icon:"🚪",repB:3,connB:1,items:[
+    {name:"老小区单间",cost:0,desc:"月租1500，没有客厅"},
+    {name:"合租两居次卧",cost:0,desc:"月租2500，跟人合租"},
+  ]},
+  { tier:"独租",icon:"🏠",repB:6,connB:3,items:[
+    {name:"一居室公寓",cost:150000,desc:"押一付三，终于有自己的空间"},
+    {name:"loft公寓",cost:250000,desc:"复式小公寓，楼下办公楼上睡觉"},
+  ]},
+  { tier:"买房",icon:"🏡",repB:10,connB:6,items:[
+    {name:"远郊两居室",cost:1500000,desc:"地铁末站，通勤1.5小时"},
+    {name:"市区小两居",cost:3500000,desc:"学区房，70平但地段好"},
+    {name:"改善型三居",cost:6000000,desc:"120平，南北通透带车位"},
+  ]},
+  { tier:"豪宅",icon:"🌇",repB:15,connB:10,items:[
+    {name:"江景大平层",cost:15000000,desc:"200平，一线江景落地窗"},
+    {name:"顶层复式",cost:25000000,desc:"带私人露台和泳池"},
+    {name:"汤臣一品",cost:80000000,desc:"上海顶级豪宅，黄浦江畔"},
+  ]},
+  { tier:"别墅",icon:"🏰",repB:20,connB:15,items:[
+    {name:"郊区联排别墅",cost:12000000,desc:"带花园车库，周末度假"},
+    {name:"独栋花园别墅",cost:35000000,desc:"500平带泳池花园"},
+    {name:"顶级庄园",cost:100000000,desc:"私人酒窖、马场、直升机坪"},
+  ]},
+];
+
+const CAR_TIERS = [
+  { tier:"无车",icon:"🚇",repB:0,connB:0,items:[
+    {name:"挤地铁公交",cost:0,desc:"早高峰人贴人"},
+  ]},
+  { tier:"两轮",icon:"🛵",repB:1,connB:0,items:[
+    {name:"小牛电动车 NQi",cost:6000,desc:"续航70km，通勤利器"},
+    {name:"雅迪冠能5代",cost:4500,desc:"石墨烯电池，跑得远"},
+    {name:"九号E300P",cost:8000,desc:"智能解锁，颜值在线"},
+  ]},
+  { tier:"代步车",icon:"🚗",repB:4,connB:2,items:[
+    {name:"比亚迪海鸥",cost:73800,desc:"纯电小车，城市通勤神器"},
+    {name:"五菱宏光MINI EV",cost:32800,desc:"人民代步车，停车方便"},
+    {name:"长安Lumin",cost:49900,desc:"可爱外观，女生最爱"},
+  ]},
+  { tier:"家用车",icon:"🚙",repB:7,connB:4,items:[
+    {name:"比亚迪秦PLUS DM-i",cost:120000,desc:"混动省油王，家用首选"},
+    {name:"特斯拉 Model 3",cost:231900,desc:"科技感拉满，自动驾驶"},
+    {name:"丰田凯美瑞",cost:179800,desc:"经典可靠，保值率高"},
+    {name:"小鹏P7+",cost:189800,desc:"国产智驾新势力"},
+    {name:"大众ID.4",cost:197000,desc:"德系品质纯电SUV"},
+  ]},
+  { tier:"豪华车",icon:"🏎️",repB:12,connB:8,items:[
+    {name:"宝马3系 325Li",cost:293900,desc:"操控标杆，商务运动两不误"},
+    {name:"奔驰C260L",cost:336800,desc:"豪华内饰，商务接待有面子"},
+    {name:"奥迪A6L 45TFSI",cost:426800,desc:"官车气质，低调有实力"},
+    {name:"蔚来ET7",cost:378000,desc:"换电无忧，国产豪华"},
+    {name:"沃尔沃S90",cost:406900,desc:"北欧豪华，安全第一"},
+    {name:"理想L9",cost:429800,desc:"家庭旗舰SUV，冰箱彩电大沙发"},
+  ]},
+  { tier:"超豪华",icon:"👔",repB:16,connB:12,items:[
+    {name:"保时捷Cayenne",cost:918000,desc:"运动型豪华SUV"},
+    {name:"宝马7系 740Li",cost:1026000,desc:"行政级轿车，老板座驾"},
+    {name:"奔驰S400L",cost:1069000,desc:"豪华旗舰，后排老板键"},
+    {name:"保时捷Panamera",cost:1036000,desc:"四门跑车，兼顾实用"},
+    {name:"雷克萨斯LX600",cost:1100000,desc:"越野豪华，沙漠之王"},
+  ]},
+  { tier:"超跑/顶奢",icon:"🏁",repB:20,connB:15,items:[
+    {name:"保时捷911 Turbo S",cost:2469000,desc:"经典超跑，911信仰"},
+    {name:"法拉利Roma",cost:2618000,desc:"意式优雅GT跑车"},
+    {name:"兰博基尼Huracán",cost:2890000,desc:"V10咆哮，街头最靓"},
+    {name:"迈巴赫S680",cost:3096000,desc:"顶级行政座驾"},
+    {name:"劳斯莱斯Ghost",cost:4500000,desc:"幻影入门，极致奢华"},
+    {name:"劳斯莱斯Cullinan",cost:6100000,desc:"SUV中的劳斯莱斯"},
+    {name:"布加迪Chiron",cost:25000000,desc:"极速之王，全球限量"},
+  ]},
+];
+
+const LIFE_TIERS = [
+  { tier:"生存",icon:"🍜",repB:0,connB:0,items:[
+    {name:"泡面+榨菜",cost:0,desc:"一天伙食费15块"},
+  ]},
+  { tier:"温饱",icon:"🥡",repB:2,connB:1,items:[
+    {name:"沙县小吃常客",cost:0,desc:"拌面扁食，经济实惠"},
+    {name:"外卖自由",cost:10000,desc:"美团红包用不停"},
+  ]},
+  { tier:"小康",icon:"👨‍🍳",repB:5,connB:3,items:[
+    {name:"自己做饭",cost:20000,desc:"买了全套厨具，周末炖汤"},
+    {name:"网红餐厅打卡",cost:50000,desc:"朋友圈美食博主"},
+    {name:"喜茶星巴克自由",cost:30000,desc:"下午茶从不犹豫"},
+  ]},
+  { tier:"品质",icon:"🍽️",repB:9,connB:6,items:[
+    {name:"日料自由",cost:100000,desc:"omakase不看价格"},
+    {name:"红酒收藏入门",cost:200000,desc:"家里有个小酒柜"},
+    {name:"商务宴请常客",cost:150000,desc:"各大高端餐厅VIP"},
+  ]},
+  { tier:"奢华",icon:"🥂",repB:14,connB:10,items:[
+    {name:"米其林三星常客",cost:500000,desc:"全球米其林打卡达人"},
+    {name:"私人营养师",cost:800000,desc:"定制健康餐食"},
+    {name:"全球美食旅行",cost:1000000,desc:"飞去东京吃寿司是日常"},
+  ]},
+  { tier:"顶级",icon:"🏆",repB:18,connB:14,items:[
+    {name:"私人厨师团队",cost:2000000,desc:"米其林主厨驻家"},
+    {name:"酒庄主人",cost:10000000,desc:"在法国波尔多买了一座酒庄"},
+    {name:"全球私人会所",cost:5000000,desc:"Soho House、长安俱乐部会员"},
+  ]},
+];
+
+function fmt(n){if(n>=1e8)return(n/1e8).toFixed(1)+"亿";if(n>=1e4)return(n/1e4).toFixed(1)+"万";return Math.round(n).toLocaleString();}
+function fmtU(n){if(n>=1e8)return(n/1e8).toFixed(1)+"亿";if(n>=1e4)return(n/1e4).toFixed(1)+"万";if(n>=1e3)return(n/1e3).toFixed(1)+"千";return Math.floor(n).toString();}
+
+function AnimNum({value,prefix="",color="#fff"}){
+  const [flash,setFlash]=useState(null);const prev=useRef(value);
+  useEffect(()=>{if(prev.current!==value){setFlash(value>prev.current?"up":"down");prev.current=value;const t=setTimeout(()=>setFlash(null),800);return()=>clearTimeout(t);}},[value]);
+  return(<div style={{position:"relative",display:"inline-block"}}>
+    <span style={{color:flash==="up"?"#34d399":flash==="down"?"#ef4444":color,transition:"color .3s",fontWeight:800,fontSize:"clamp(11px,3vw,14px)",animation:flash?"numB .4s":""}}>{prefix}{typeof value==="number"?(value>=1e4?fmt(value):Math.round(value).toLocaleString()):value}</span>
+    {flash&&<span style={{position:"absolute",top:-12,left:"50%",transform:"translateX(-50%)",fontSize:9,fontWeight:800,color:flash==="up"?"#34d399":"#ef4444",animation:"floatA .8s forwards",pointerEvents:"none"}}>{flash==="up"?"▲":"▼"}</span>}
+  </div>);
+}
+
+function Popup({children,onClose,border="#818cf8"}){
+  useEffect(()=>{const t=setTimeout(onClose,2500);return()=>clearTimeout(t);},[onClose]);
+  return(<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",zIndex:999,background:"rgba(0,0,0,.5)",backdropFilter:"blur(4px)",animation:"fadeIn .3s"}} onClick={onClose}>
+    <div style={{background:"linear-gradient(135deg,rgba(26,26,62,.95),rgba(13,27,42,.95))",border:`2px solid ${border}44`,borderRadius:20,padding:"28px 36px",textAlign:"center",animation:"popIn .5s cubic-bezier(.34,1.56,.64,1)",boxShadow:`0 0 60px ${border}22`,maxWidth:"85vw"}} onClick={e=>e.stopPropagation()}>
+      {children}
+    </div>
+  </div>);
+}
+
+function StartupLife(){
+  const [phase,setPhase]=useState("menu");
+  const [bg,setBg]=useState(null);
+  const [ind,setInd]=useState(null);
+  const [name,setName]=useState("");
+  const [mo,setMo]=useState(1);
+  const [cash,setCash]=useState(0);
+  const [users,setUsers]=useState(0);
+  const [team,setTeam]=useState(1);
+  const [rep,setRep]=useState(50);
+  const [conn,setConn]=useState(20);
+  const [fr,setFr]=useState(0);
+  const [val,setVal]=useState(0);
+  const [eq,setEq]=useState(100);
+  const [comps,setComps]=useState([]);
+  const [evt,setEvt]=useState(null);
+  const [loading,setLoading]=useState(false);
+  const [history,setHistory]=useState([]);
+  const [miles,setMiles]=useState([]);
+  const [overMsg,setOverMsg]=useState("");
+  const [showHist,setShowHist]=useState(false);
+  const [showShop,setShowShop]=useState(false);
+  const [shopTab,setShopTab]=useState("car");
+  const [gachaState,setGachaState]=useState("idle");
+  const [gachaIdx,setGachaIdx]=useState(0);
+  // Lifestyle: store as {tierIdx, itemIdx} for each category
+  const [ownedH,setOwnedH]=useState({tier:0,item:0});
+  const [ownedC,setOwnedC]=useState({tier:0,item:0});
+  const [ownedL,setOwnedL]=useState({tier:0,item:0});
+  const [popup,setPopup]=useState(null);
+  
+  const [debt,setDebt]=useState(0);
+  const [showSurv,setShowSurv]=useState(false);
+  const [survCnt,setSurvCnt]=useState(0);
+  const [greed,setGreed]=useState(0);
+  const [selOpts,setSelOpts]=useState(new Set());
+
+  const aiRef=useRef([]);
+  const stage=STAGES.reduce((a,s)=>(mo>=s.m?s:a),STAGES[0]);
+
+  const curH=HOUSING_TIERS[ownedH.tier].items[ownedH.item];
+  const curC=CAR_TIERS[ownedC.tier].items[ownedC.item];
+  const curL=LIFE_TIERS[ownedL.tier].items[ownedL.item];
+
+  const doGacha=()=>{
+    setPhase("gacha");setGachaState("rolling");
+    let c=0;const max=20+Math.floor(Math.random()*10);
+    const iv=setInterval(()=>{setGachaIdx(Math.floor(Math.random()*BACKGROUNDS.length));c++;if(c>=max){clearInterval(iv);setBg(BACKGROUNDS[Math.floor(Math.random()*BACKGROUNDS.length)]);setGachaState("reveal");}},80+c*5);
+  };
+
+  const startGame=(industry)=>{
+    setInd(industry);setCash(bg.cash);setConn(bg.connections);
+    setUsers(0);setTeam(1);setRep(50);setMo(1);setFr(0);setVal(bg.cash*5);setEq(100);
+    setEvt(null);setHistory([]);setMiles([]);
+    setOwnedH({tier:0,item:0});setOwnedC({tier:0,item:0});setOwnedL({tier:0,item:0});
+    setShowShop(false);setShowHist(false);setPopup(null);setDebt(0);setShowSurv(false);setSurvCnt(0);setGreed(0);setSelOpts(new Set());
+    aiRef.current=[];
+    const pool=COMP_POOL[industry.id]||COMP_FB;const ns=[...pool].sort(()=>Math.random()-.5).slice(0,3);
+    setComps(ns.map(n=>({name:n,cash:80000+Math.random()*120000,users:Math.floor(Math.random()*50),rep:40+Math.floor(Math.random()*20),str:0.7+Math.random()*0.6})));
+    setPhase("playing");
+  };
+
+  const buyItem=(type,tierIdx,itemIdx)=>{
+    const tiers={housing:HOUSING_TIERS,car:CAR_TIERS,life:LIFE_TIERS}[type];
+    const owned={housing:ownedH,car:ownedC,life:ownedL}[type];
+    const item=tiers[tierIdx].items[itemIdx];
+    const tierData=tiers[tierIdx];
+    const oldTierData=tiers[owned.tier];
+    if(item.cost>cash)return;
+    setCash(c=>c-item.cost);
+    const dRep=tierData.repB-oldTierData.repB;
+    const dConn=tierData.connB-oldTierData.connB;
+    if(dRep>0)setRep(r=>Math.min(100,r+dRep));
+    if(dConn>0)setConn(k=>Math.min(100,k+dConn));
+    const setter={housing:setOwnedH,car:setOwnedC,life:setOwnedL}[type];
+    setter({tier:tierIdx,item:itemIdx});
+    setPopup({type:"purchase",icon:tierData.icon,name:item.name,cost:item.cost,desc:item.desc});
+  };
+
+  // SURVIVAL OPTIONS
+  const SURV=[
+    {n:"银行贷款",i:"🏦",d:"经营贷年利率6%",am:3,ct:"int",cr:0.06,cq:20,rq:30},
+    {n:"亲友借钱",i:"👨‍👩‍👧",d:"向亲戚朋友周转",am:1.5,ct:"conn",cv:-8,cq:10,rq:0},
+    {n:"信用卡套现",i:"💳",d:"高风险高利息",am:1,ct:"int",cr:0.18,cq:0,rq:0},
+    {n:"卖房续命",i:"🏠",d:"卖房产换现金",ct:"sellH",cq:0,rq:0},
+    {n:"卖车续命",i:"🚗",d:"卖座驾换现金",ct:"sellC",cq:0,rq:0},
+    {n:"合伙人注资",i:"🤝",d:"让股份换资金",am:2,ct:"eq",cv:8,cq:30,rq:40},
+    {n:"政府补贴",i:"🏛️",d:"创业扶持基金",am:0.5,ct:"none",cq:40,rq:50},
+  ];
+  const execSurv=(opt)=>{
+    let amt=0;
+    if(opt.ct==="sellH"){amt=HOUSING_TIERS[ownedH.tier].items[ownedH.item].cost*0.7||50000;setOwnedH({tier:Math.max(0,ownedH.tier-1),item:0});}
+    else if(opt.ct==="sellC"){amt=CAR_TIERS[ownedC.tier].items[ownedC.item].cost*0.6||20000;setOwnedC({tier:Math.max(0,ownedC.tier-1),item:0});}
+    else{const base=bg?.borrow||100000;amt=base*(opt.am||1)*(1+fr*0.5);
+      if(opt.ct==="int")setDebt(d=>d+amt*(1+(opt.cr||0)));
+      else if(opt.ct==="conn")setConn(k=>Math.max(0,k+(opt.cv||0)));
+      else if(opt.ct==="eq"){setEq(e=>Math.max(5,e-(opt.cv||0)));setDebt(d=>d+amt*0.3);}
+      else setDebt(d=>d+amt*0.1);}
+    setCash(c=>c+amt);setSurvCnt(s=>s+1);setShowSurv(false);
+    setPopup({type:"survival",name:opt.n,icon:opt.i,amount:amt});
+    setHistory(p=>[...p,{mo,title:"续命:"+opt.n,choice:"+¥"+fmt(amt),sum:"第"+mo+"月:续命"+opt.n,emoji:"🆘",type:"funding"}]);
+  };
+
+  const genEvent=useCallback(async(gs)=>{
+    setLoading(true);
+    const ci=comps.map(c=>`${c.name}(${fmtU(c.users)}用户)`).join(";");
+    const rh=history.slice(-3).map(e=>e.sum).join(";");
+    const lifeDesc=`住:${curH.name} 车:${curC.name} 生活:${curL.name}`;
+    const strats=["挖竞对核心员工","跨界联名合作","押注新技术方向","出海开拓市场","短视频营销","请KOL带货","发动价格战","收购小团队","申请专利壁垒","业务转型","接受对赌","卖副业务聚焦","找政府拿补贴","搞事件营销","优化供应链","开放加盟","裁员瘦身","对外融资","找大厂站台","起诉侵权","技术开源换口碑","参加创业大赛","抖音直播创业","偷师竞对"];
+    const pick3=strats.sort(()=>Math.random()-.5).slice(0,6).join("/");
+    const sys=`你是创业模拟游戏AI导演。为玩家生成有戏剧性、策略深度的事件。
+
+【最重要】必须提供3-4个策略方向完全不同的选项！
+绝对禁止"加大投入/保守经营/观望等待"这类万金油！
+每个选项必须是具体行动,参考:${pick3}等
+
+【玩家信息】行业:${gs.ind.name} 背景:${gs.bg.name}(${gs.bg.trait}) 生活:${lifeDesc} 第${gs.mo}月${gs.stage.name}
+
+【选项设计】
+-4个选项分别走不同路线(技术vs营销vs合作vs冒险等)
+-至少1个大胆冒险(高风险高回报)
+-至少1个剑走偏锋(非常规但有趣)
+-effects数值要有明显差异:cash:-30~+30% users:-20~+40% reputation:-15~+20
+-让玩家真正纠结,没有明显最优解
+
+【事件类型】行业机遇危机40%/人才团队15%/竞争对手15%/家庭生活10%/融资资本10%/新对手newCompetitor10%
+【多选】约35%设multiSelect:true加multiSelectHint
+【禁止重复】${rh||"无"}
+
+严格只返回JSON不要markdown:
+{"title":"10字内","description":"50-100字有画面感","emoji":"emoji","type":"opportunity|crisis|decision|competitor|funding|family|newCompetitor","multiSelect":false,"options":[{"text":"15字内具体行动","detail":"20-40字具体做法和后果","effects":{"cash":0,"users":0,"team":0,"reputation":0,"connections":0},"risk":"low|medium|high","effectMode":"percent|absolute"}]}`;
+    const usr=`${gs.name}(${gs.ind.name}) ${gs.bg.name}(${gs.bg.trait}) 第${gs.mo}月 ${gs.stage.name}
+💰${fmt(gs.cash)} 👥${fmtU(gs.users)} 👨‍💻${gs.team}人 ⭐${gs.rep} 🤝${gs.conn}
+${["未融资","天使轮","A轮","B轮","C轮","已上市"][gs.fr]} 估值${fmt(gs.val)} 持股${gs.eq.toFixed(1)}%
+生活:${lifeDesc} 竞争:${ci}`;
+    try{
+      const msgs=[...aiRef.current.slice(-6),{role:"user",content:usr}];
+      const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({system:sys,messages:msgs})});
+      const d=await r.json();const t=d.content||"";
+      const c=t.replace(/```json|```/g,"").trim();const e=JSON.parse(c);
+      aiRef.current.push({role:"user",content:usr},{role:"assistant",content:c});
+      if(aiRef.current.length>12)aiRef.current=aiRef.current.slice(-8);
+      setEvt(e);
+    }catch(err){
+      console.error("AI err:",err);
+      const _FB=[
+{title:"\u6280\u672f\u5927\u725b\u6295\u7b80\u5386",description:"\u4e00\u4f4d\u4ece\u5927\u5382\u79bb\u804c\u7684\u6280\u672fVP\u4e3b\u52a8\u627e\u4f60\uff0c\u613f\u964d\u85aa\u52a0\u5165\u4f46\u8981\u671f\u6743\u3002\u7ade\u5bf9\u4e5f\u5728\u6316\u4ed6\uff0c\u4f60\u53ea\u670948\u5c0f\u65f6\u3002",emoji:"\ud83d\udc68\u200d\ud83d\udcbb",type:"opportunity",
+options:[{text:"\u5f005\u4e07\u6708\u85aa+2%\u671f\u6743",detail:"\u9ad8\u85aa\u9501\u5b9a\u4eba\u624d\uff0c\u70e7\u94b1\u4f46\u503c",effects:{cash:-20,users:15,team:15,reputation:10,connections:5},risk:"medium",effectMode:"percent"},
+{text:"\u7ed9\u8054\u521b\u5934\u8854\u753b\u5927\u997c",detail:"CTO\u5934\u8854+\u5c11\u91cf\u671f\u6743\uff0c\u4e3b\u6253\u68a6\u60f3",effects:{cash:-5,users:8,team:10,reputation:5,connections:8},risk:"medium",effectMode:"percent"},
+{text:"\u5148\u8bf7\u505a\u517c\u804c\u987e\u95ee",detail:"\u6bcf\u6708\u67652\u5929\u6307\u5bfc\uff0c\u4f4e\u6210\u672c\u8bd5\u63a2",effects:{cash:-3,users:5,team:3,reputation:3,connections:3},risk:"low",effectMode:"percent"},
+{text:"\u653e\u5f03\uff0c\u81ea\u5df1\u57f9\u517b\u4eba",detail:"\u7701\u94b1\u4f46\u6162\uff0c\u628a\u8d44\u6e90\u6295\u5185\u90e8\u57f9\u8bad",effects:{cash:3,users:-3,team:5,reputation:0,connections:-2},risk:"low",effectMode:"percent"}]},
+{title:"\u7ade\u5bf9\u5f00\u59cb\u70e7\u94b1",description:"\u76f4\u63a5\u7ade\u4e89\u5bf9\u624b\u521a\u5b8c\u6210\u878d\u8d44\uff0c\u7591\u72c2\u8865\u8d34\u7528\u6237\u62a2\u5e02\u573a\uff0c\u4f60\u7684\u589e\u901f\u660e\u663e\u653e\u7f13\uff0c\u56e2\u961f\u5f00\u59cb\u7126\u8651\u3002",emoji:"\u2694\ufe0f",type:"competitor",
+options:[{text:"\u8ddf\u8fdb\u8865\u8d34\u6b63\u9762\u786c\u521a",detail:"\u62ff\u51fa30%\u73b0\u91d1\u505a\u8865\u8d34\uff0c\u7528\u6237\u9760\u62a2",effects:{cash:-30,users:25,team:0,reputation:-5,connections:0},risk:"high",effectMode:"percent"},
+{text:"\u5dee\u5f02\u5316\u6253\u4fa7\u7ffc",detail:"\u4e13\u653b\u5bf9\u624b\u5ffd\u7565\u7684\u5782\u76f4\u9886\u57df",effects:{cash:-8,users:5,team:5,reputation:15,connections:5},risk:"low",effectMode:"percent"},
+{text:"\u627e\u4ed6\u6295\u8d44\u4eba\u91ca\u653e\u5408\u5e76\u4fe1\u53f7",detail:"\u5236\u9020\u6574\u5408\u9884\u671f\uff0c\u8bd5\u63a2\u8d44\u672c\u6001\u5ea6",effects:{cash:0,users:0,team:0,reputation:5,connections:15},risk:"medium",effectMode:"percent"},
+{text:"\u6316\u5bf9\u624b3\u4e2a\u6838\u5fc3\u9aa8\u5e72",detail:"\u9ad8\u85aa\u6316\u4eba\u91dc\u5e95\u62bd\u85aa\uff0c\u987a\u4fbf\u62ff\u60c5\u62a5",effects:{cash:-15,users:5,team:8,reputation:-8,connections:3},risk:"high",effectMode:"percent"}]},
+{title:"\u77ed\u89c6\u9891\u7a81\u7136\u7206\u4e86",description:"\u56e2\u961f\u968f\u624b\u62cd\u7684\u4e00\u6761\u5e55\u540e\u89c6\u9891\u64ad\u653e\u91cf\u7834\u5343\u4e07\uff01\u7528\u6237\u6d8c\u5165\uff0c\u670d\u52a1\u5668\u5feb\u6491\u4e0d\u4f4f\u4e86\u3002",emoji:"\ud83d\udd25",type:"opportunity",
+options:[{text:"\u8fde\u591c\u6269\u5bb9\u5168\u529b\u627f\u63a5",detail:"\u7d27\u6025\u52a0\u670d\u52a1\u5668+\u62db\u4e34\u65f6\u5ba2\u670d",effects:{cash:-20,users:35,team:3,reputation:8,connections:5},risk:"medium",effectMode:"percent"},
+{text:"\u521b\u59cb\u4eba\u4eb2\u81ea\u5f00\u76f4\u64ad",detail:"\u8d81\u70ed\u5ea6\u5728\uff0c\u4f60\u4eb2\u81ea\u76f4\u64ad\u8bb2\u521b\u4e1a\u6545\u4e8b",effects:{cash:-3,users:20,team:0,reputation:18,connections:10},risk:"medium",effectMode:"percent"},
+{text:"\u7b7eMCN\u957f\u671f\u5408\u4f5c",detail:"\u627e\u4e13\u4e1aMCN\u6301\u7eed\u4ea7\u51fa\u5185\u5bb9",effects:{cash:-12,users:15,team:3,reputation:8,connections:12},risk:"low",effectMode:"percent"},
+{text:"\u9650\u6d41\u4fdd\u53e3\u7891",detail:"\u63a7\u5236\u6ce8\u518c\u901f\u5ea6\u786e\u4fdd\u4f53\u9a8c\uff0c\u53e3\u7891\u4f18\u5148",effects:{cash:-3,users:8,team:0,reputation:20,connections:2},risk:"low",effectMode:"percent"}]},
+{title:"\u5bb6\u4eba\u7a81\u7136\u6765\u8bbf",description:"\u7238\u5988\u4ece\u8001\u5bb6\u6765\u770b\u4f60\uff0c\u770b\u5230\u4f60\u7684\u5de5\u4f5c\u548c\u751f\u6d3b\u72b6\u6001\uff0c\u5f00\u59cb\u65c1\u6572\u4fa7\u51fb\u95ee\u4f60\u8981\u4e0d\u8981\u56de\u53bb\u8003\u516c\u52a1\u5458...",emoji:"\ud83d\udc68\u200d\ud83d\udc69\u200d\ud83d\udc67",type:"family",
+options:[{text:"\u5e26\u4ed6\u4eec\u53c2\u89c2\u516c\u53f8",detail:"\u8ba9\u4ed6\u4eec\u770b\u5230\u56e2\u961f\u548c\u4ea7\u54c1\uff0c\u611f\u53d7\u6fc0\u60c5",effects:{cash:-2,users:0,team:3,reputation:5,connections:5},risk:"low",effectMode:"percent"},
+{text:"\u8bf7\u5403\u987f\u597d\u7684\u8868\u5b5d\u5fc3",detail:"\u9ad8\u6863\u9910\u5385\u5403\u4e00\u987f\uff0c\u8bc1\u660e\u4f60\u8fc7\u5f97\u4e0d\u9519",effects:{cash:-5,users:0,team:0,reputation:3,connections:3},risk:"low",effectMode:"percent"},
+{text:"\u76f4\u63a5\u8f6c\u4e00\u7b14\u94b1",detail:"\u8f6c5\u4e07\u8ba9\u4ed6\u4eec\u5b89\u5fc3\uff0c\u8bc1\u660e\u80fd\u8d5a\u94b1",effects:{cash:-8,users:0,team:0,reputation:0,connections:8},risk:"low",effectMode:"absolute"},
+{text:"\u5766\u767d\u56f0\u5883\u6c42\u652f\u6301",detail:"\u5b9e\u8bdd\u5b9e\u8bf4\uff0c\u8bf7\u6c42\u5bb6\u4eba\u591a\u7ed9\u4e24\u5e74\u65f6\u95f4",effects:{cash:0,users:0,team:2,reputation:-3,connections:5},risk:"low",effectMode:"percent"}]},
+{title:"\u6838\u5fc3\u6570\u636e\u6cc4\u9732",description:"\u516c\u53f8\u7528\u6237\u6570\u636e\u7591\u4f3c\u88ab\u6cc4\u9732\uff01\u793e\u4ea4\u5a92\u4f53\u5df2\u6709\u622a\u56fe\u6d41\u4f20\uff0c\u8bb0\u8005\u5f00\u59cb\u6253\u7535\u8bdd\u4e86\u3002",emoji:"\ud83d\udea8",type:"crisis",
+options:[{text:"\u7b2c\u4e00\u65f6\u95f4\u516c\u5f00\u9053\u6b49",detail:"\u53d1\u58f0\u660e\u627f\u8ba4\u95ee\u9898\uff0c\u516c\u5e03\u6574\u6539\u65b9\u6848",effects:{cash:-10,users:-15,team:0,reputation:-5,connections:-3},risk:"medium",effectMode:"percent"},
+{text:"\u8bf7\u5b89\u5168\u516c\u53f8\u5f7b\u67e5",detail:"\u82b1\u91cd\u91d1\u8bf7\u9876\u7ea7\u5b89\u5168\u56e2\u961f\u6392\u67e5",effects:{cash:-18,users:-8,team:3,reputation:5,connections:5},risk:"medium",effectMode:"percent"},
+{text:"\u4f4e\u8c03\u5904\u7406\u8d4c\u5b83\u8fc7\u53bb",detail:"\u6084\u6084\u4fee\u590d\u6f0f\u6d1e\uff0c\u8d4c\u5a92\u4f53\u4e0d\u8ddf\u8fdb",effects:{cash:-3,users:-5,team:0,reputation:-15,connections:-5},risk:"high",effectMode:"percent"},
+{text:"\u5316\u5371\u4e3a\u673a\u63a8\u9690\u79c1\u529f\u80fd",detail:"\u501f\u6b64\u63a8\u51fa\u4e1a\u754c\u6700\u5f3a\u9690\u79c1\u4fdd\u62a4\uff0c\u53cd\u8f6c\u53e3\u7891",effects:{cash:-15,users:-10,team:5,reputation:12,connections:3},risk:"high",effectMode:"percent"}]},
+{title:"\u6295\u8d44\u4eba\u4e3b\u52a8\u7ea6\u996d",description:"\u4e00\u4f4d\u77e5\u540dVC\u5408\u4f19\u4eba\u4e3b\u52a8\u7ea6\u4f60\uff0c\u4f46\u63d0\u51fa\u82db\u523b\u6761\u4ef6\uff1a\u5bf9\u8d4c3\u5e74\u4e0a\u5e02\uff0c\u5426\u5219\u56de\u8d2d\u80a1\u4efd\u3002",emoji:"\u2615",type:"funding",
+options:[{text:"\u63a5\u53d7\u5bf9\u8d4c\u62ff\u94b1",detail:"\u6709\u538b\u529b\u624d\u6709\u52a8\u529b\uff0c\u7b7e\u4e86\uff01",effects:{cash:25,users:10,team:5,reputation:8,connections:10},risk:"high",effectMode:"percent"},
+{text:"\u53cd\u63d0\u8425\u6536\u76ee\u6807\u8c08\u5224",detail:"\u628a\u4e0a\u5e02\u6539\u6210\u6536\u5165\u6307\u6807\uff0c\u964d\u4f4e\u98ce\u9669",effects:{cash:15,users:5,team:0,reputation:5,connections:8},risk:"medium",effectMode:"percent"},
+{text:"\u5a49\u62d2\u4fdd\u6301\u72ec\u7acb",detail:"\u611f\u8c22\u597d\u610f\u4f46\u6682\u4e0d\u9700\u8981\uff0c\u7559\u4f4f\u63a7\u5236\u6743",effects:{cash:0,users:0,team:0,reputation:8,connections:5},risk:"low",effectMode:"percent"},
+{text:"\u6545\u610f\u900f\u9732\u7ed9\u7ade\u4e89VC",detail:"\u5236\u9020FOMO\u8ba9\u591a\u5bb6\u62a2\u6295\uff0c\u62ac\u9ad8\u4f30\u503c",effects:{cash:5,users:0,team:0,reputation:3,connections:18},risk:"medium",effectMode:"percent"}]},
+{title:"\u5408\u4f19\u4eba\u60f3\u79bb\u5f00",description:"\u8ddf\u4f60\u4e00\u8d77\u521b\u4e1a\u7684\u6280\u672f\u5408\u4f19\u4eba\u6536\u5230\u5927\u5382200\u4e07\u5e74\u85aaOffer\uff0c\u72b9\u8c6b\u8981\u4e0d\u8981\u8d70\u3002\u56e2\u961f\u58eb\u6c14\u52a8\u6447\u3002",emoji:"\ud83d\udc94",type:"crisis",
+options:[{text:"\u52a0\u85aa+\u52a0\u671f\u6743\u631d\u7559",detail:"\u6da8\u85aa50%+\u8ffd\u52a03%\u671f\u6743\uff0c\u7528\u94b1\u8868\u8fbe\u8bda\u610f",effects:{cash:-15,users:0,team:8,reputation:5,connections:3},risk:"medium",effectMode:"percent"},
+{text:"\u653e\u624b\u795d\u798f\u597d\u805a\u597d\u6563",detail:"\u5927\u65b9\u653e\u4eba\uff0c\u4fdd\u6301\u5173\u7cfb\uff0c\u4ee5\u540e\u8fd8\u662f\u670b\u53cb",effects:{cash:0,users:0,team:-10,reputation:8,connections:5},risk:"medium",effectMode:"percent"},
+{text:"\u7ed9\u4ed6\u72ec\u7acb\u4e1a\u52a1\u7ebf",detail:"\u8ba9\u4ed6\u8d1f\u8d23\u65b0\u4ea7\u54c1\u7ebf\uff0c\u7ed9\u66f4\u5927\u821e\u53f0",effects:{cash:-10,users:5,team:5,reputation:3,connections:3},risk:"medium",effectMode:"percent"},
+{text:"\u6446\u724c\uff1a\u8d70\u53ef\u4ee5\u4ea4\u51fa\u4ee3\u7801",detail:"\u5f3a\u786c\u4fdd\u62a4\u516c\u53f8\u5229\u76ca\uff0c\u6280\u672f\u8d44\u4ea7\u4e0d\u80fd\u5e26\u8d70",effects:{cash:0,users:0,team:-5,reputation:-8,connections:-5},risk:"high",effectMode:"percent"}]},
+{title:"\u653f\u7b56\u7a81\u7136\u53d8\u5316",description:"\u653f\u5e9c\u51fa\u53f0\u65b0\u89c4\uff0c\u4f60\u6240\u5728\u884c\u4e1a\u9700\u8981\u989d\u5916\u8d44\u8d28\u548c\u5408\u89c4\u5ba1\u67e5\uff0c3\u4e2a\u6708\u5185\u5fc5\u987b\u5b8c\u6210\u6574\u6539\u3002",emoji:"\ud83d\udcdc",type:"crisis",
+options:[{text:"\u7acb\u523b\u8bf7\u5f8b\u5e08\u5408\u89c4",detail:"\u82b1\u94b1\u8bf7\u4e13\u4e1a\u56e2\u961f\uff0c\u7b2c\u4e00\u65f6\u95f4\u62ff\u8d44\u8d28",effects:{cash:-15,users:-5,team:3,reputation:12,connections:5},risk:"low",effectMode:"percent"},
+{text:"\u627e\u653f\u5e9c\u5173\u7cfb\u6c9f\u901a",detail:"\u901a\u8fc7\u4eba\u8109\u4e86\u89e3\u5185\u60c5\uff0c\u4e89\u53d6\u5bbd\u9650\u671f",effects:{cash:-5,users:0,team:0,reputation:3,connections:-5},risk:"medium",effectMode:"percent"},
+{text:"\u8d81\u673a\u641e\u884c\u4e1a\u8054\u76df",detail:"\u8054\u5408\u540c\u884c\u4e00\u8d77\u5e94\u5bf9\uff0c\u987a\u4fbf\u5f53\u5e26\u5934\u5927\u54e5",effects:{cash:-8,users:3,team:0,reputation:15,connections:15},risk:"medium",effectMode:"percent"},
+{text:"\u501f\u5408\u89c4\u505a\u7ade\u4e89\u58c1\u5792",detail:"\u9ad8\u6807\u51c6\u6574\u6539\u540e\u7528\u8d44\u8d28\u95e8\u69db\u5361\u7ade\u5bf9",effects:{cash:-20,users:-3,team:5,reputation:10,connections:8},risk:"high",effectMode:"percent"}]}
+      ];
+      setEvt(_FB[Math.floor(Math.random()*_FB.length)]);
+    }
+    setLoading(false);
+  },[comps,history,curH,curC,curL]);
+
+  const decide=useCallback((opts_or_opt)=>{
+    const opts=Array.isArray(opts_or_opt)?opts_or_opt:[opts_or_opt];
+    const gMult=opts.length>1?1+(opts.length-1)*0.15+greed*0.05:1;
+    if(opts.length>1)setGreed(g=>g+opts.length*0.5);
+    const opt=opts[0];// use first for effectMode
+    // Merge effects from all selected options
+    let me={cash:0,users:0,team:0,reputation:0,connections:0};
+    opts.forEach(o=>{const e=o.effects;Object.keys(me).forEach(k=>{me[k]+=(e[k]||0);});});
+    // Apply greed: negative effects amplified
+    Object.keys(me).forEach(k=>{if(me[k]<0)me[k]*=gMult;else if(opts.length>1)me[k]*=1/Math.sqrt(gMult);});
+    const fakeOpt={effects:me,effectMode:opt.effectMode||"percent",text:opts.map(o=>o.text).join("+"),detail:"",risk:"medium"};
+    const e=fakeOpt.effects,m=fakeOpt.effectMode||"percent";
+    let nc=cash,nu=users,nt=team,nr=rep,nk=conn;
+    if(m==="percent"){nc=cash*(1+(e.cash||0)/100);nu=Math.max(0,users*(1+(e.users||0)/100)+(e.users>0&&users<10?Math.max(e.users,1):0));nt=Math.max(1,Math.round(team*(1+(e.team||0)/100)));nr=Math.min(100,Math.max(0,rep+(e.reputation||0)));nk=Math.min(100,Math.max(0,conn+(e.connections||0)));}
+    else{nc=cash+(e.cash||0);nu=Math.max(0,users+(e.users||0));nt=Math.max(1,team+(e.team||0));nr=Math.min(100,Math.max(0,rep+(e.reputation||0)));nk=Math.min(100,Math.max(0,conn+(e.connections||0)));}
+    const v=()=>0.9+Math.random()*0.2;if(e.cash)nc*=v();if(e.users)nu*=v();
+    nc-=team*12000;if(debt>0)nc-=debt*0.005;nu+=Math.max(0,(nr-30)/100*nu*0.05);if(nk>50)nc+=nk*100;
+    const nv=Math.max(val,(nu*100+nc*0.5+nr*10000+nk*5000)*(1+fr*0.3));
+    setComps(p=>p.map(c=>({...c,cash:c.cash*(0.95+Math.random()*0.15)+c.str*50000,users:c.users*(1+c.str*0.08*(0.5+Math.random())),rep:Math.min(100,Math.max(20,c.rep+(Math.random()-0.4)*5))})));
+    setCash(nc);setUsers(Math.max(0,nu));setTeam(nt);setRep(nr);setConn(nk);setVal(nv);setMo(x=>x+1);
+    setHistory(p=>[...p,{mo,title:evt?.title,choice:fakeOpt.text,sum:`第${mo}月:${evt?.title}->"${opt.text}"`,emoji:evt?.emoji,type:evt?.type}]);
+    const ms=[];const ids=miles.map(m=>m.id);
+    [[1,"fu","🎯 第一个用户！"],[1e3,"1k","🎉 用户破千！"],[1e4,"10k","🔥 用户破万！"],[1e5,"100k","💥 用户10万！"],[1e6,"1m","🌟 用户百万！"]].forEach(([th,id,tx])=>{if(nu>=th&&!ids.includes(id))ms.push({id,text:tx,mo:mo+1});});
+    if(nt>=10&&!ids.includes("t10"))ms.push({id:"t10",text:"👥 团队破10人！",mo:mo+1});
+    if(nc>=1e7&&!ids.includes("10mc"))ms.push({id:"10mc",text:"💰 账上破千万！",mo:mo+1});
+    if(ms.length){setMiles(p=>[...p,...ms]);setPopup({type:"milestone",text:ms[0].text});}
+    if(nc<=0){
+      const canS=SURV.some(o=>{if(o.cq>nk||o.rq>nr)return false;if(o.ct==="sellH"&&ownedH.tier<=1)return false;if(o.ct==="sellC"&&ownedC.tier<=0)return false;return true;});
+      if(!canS&&debt>nv*0.5){setOverMsg("负债超过估值50%，续命手段用尽");setPhase("gameover");return;}
+      else if(!canS){setOverMsg("现金耗尽无法借钱");setPhase("gameover");return;}
+      else{setShowSurv(true);return;}
+    }
+    if(nv>=1e9&&nr>=70&&mo>=24){setPhase("won");return;}
+    const cb=nk/100;
+    if(fr===0&&nu>=100*(1-cb*.3)&&mo>=3){setFr(1);setEq(x=>x-10-Math.random()*5);const a=5e5+Math.random()*5e5+nk*5e3;setCash(x=>x+a);setPopup({type:"milestone",text:`💰 天使轮！+¥${fmt(a)}`});}
+    else if(fr===1&&nu>=5e3*(1-cb*.3)&&mo>=6){setFr(2);setEq(x=>x-8-Math.random()*7);const a=3e6+Math.random()*2e6;setCash(x=>x+a);setPopup({type:"milestone",text:`💰 A轮！+¥${fmt(a)}`});}
+    else if(fr===2&&nu>=5e4*(1-cb*.3)&&mo>=12){setFr(3);setEq(x=>x-6-Math.random()*6);const a=1.5e7+Math.random()*1e7;setCash(x=>x+a);setPopup({type:"milestone",text:`💰 B轮！+¥${fmt(a)}`});}
+    else if(fr===3&&nu>=5e5*(1-cb*.3)&&mo>=18){setFr(4);setEq(x=>x-5-Math.random()*5);const a=8e7+Math.random()*4e7;setCash(x=>x+a);setPopup({type:"milestone",text:`💰 C轮！+¥${fmt(a)}`});}
+    setEvt(null);
+  },[cash,users,team,rep,conn,val,fr,eq,mo,evt,miles]);
+
+  useEffect(()=>{if(phase==="playing"&&!evt&&!loading&&!showSurv)genEvent({name,ind,bg,mo,cash,users,team,rep,conn,fr,val,eq,stage});},[phase,evt,loading]);
+
+  const P={background:"rgba(255,255,255,.06)",borderRadius:16,border:"1px solid rgba(255,255,255,.1)",padding:16,backdropFilter:"blur(10px)"};
+  const CSS=`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+@keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
+@keyframes dot{0%,100%{opacity:.3}50%{opacity:1}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px) rotate(-2deg)}75%{transform:translateX(8px) rotate(2deg)}}
+@keyframes confetti{0%{transform:translateY(-10vh) rotate(0);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
+@keyframes numB{0%{transform:scale(1)}30%{transform:scale(1.3)}100%{transform:scale(1)}}
+@keyframes floatA{0%{transform:translateX(-50%) translateY(0);opacity:1}100%{transform:translateX(-50%) translateY(-20px);opacity:0}}
+@keyframes popIn{0%{transform:scale(0)}50%{transform:scale(1.1)}100%{transform:scale(1)}}
+.ob{transition:all .2s;cursor:pointer}.ob:hover{transform:translateY(-2px);box-shadow:0 6px 25px rgba(99,102,241,.3)}.ob:active{transform:scale(.98)}
+.ic{transition:all .2s;cursor:pointer}.ic:hover{transform:translateY(-3px);box-shadow:0 8px 30px rgba(99,102,241,.3)}
+.si{transition:all .2s;cursor:pointer}.si:hover{transform:scale(1.02);border-color:rgba(129,140,248,.5)!important;box-shadow:0 4px 15px rgba(99,102,241,.2)}`;
+
+  // SHOP PANEL renderer
+  const renderShop=()=>{
+    const tabs=[{key:"car",label:"🚗 座驾",tiers:CAR_TIERS,owned:ownedC,type:"car"},{key:"housing",label:"🏠 住房",tiers:HOUSING_TIERS,owned:ownedH,type:"housing"},{key:"life",label:"🍽️ 生活",tiers:LIFE_TIERS,owned:ownedL,type:"life"}];
+    const active=tabs.find(t=>t.key===shopTab)||tabs[0];
+    return(
+      <div style={{width:"min(92vw,520px)",marginBottom:12,...P,padding:12,animation:"fadeIn .3s"}}>
+        <div style={{display:"flex",gap:6,marginBottom:12}}>
+          {tabs.map(t=><button key={t.key} onClick={()=>setShopTab(t.key)} style={{flex:1,padding:"8px",borderRadius:10,border:"1px solid",borderColor:shopTab===t.key?"rgba(129,140,248,.5)":"rgba(255,255,255,.1)",background:shopTab===t.key?"rgba(129,140,248,.15)":"transparent",color:shopTab===t.key?"#818cf8":"rgba(255,255,255,.5)",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{t.label}</button>)}
+        </div>
+        <div style={{maxHeight:300,overflowY:"auto",paddingRight:4}}>
+          {active.tiers.map((tier,ti)=>{
+            const isOwned=ti<active.owned.tier||(ti===active.owned.tier);
+            return(<div key={ti} style={{marginBottom:12}}>
+              <div style={{fontSize:11,fontWeight:800,color:isOwned?"rgba(52,211,153,.7)":"rgba(255,255,255,.4)",marginBottom:6}}>{tier.icon} {tier.tier} {isOwned&&ti<active.owned.tier?"✓ 已超越":ti===active.owned.tier?"← 当前":""}</div>
+              <div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:4}}>
+                {tier.items.map((item,ii)=>{
+                  const isCurrent=ti===active.owned.tier&&ii===active.owned.item;
+                  const canBuy=ti>active.owned.tier&&cash>=item.cost;
+                  const tooLow=ti<active.owned.tier;
+                  const sameTierOther=ti===active.owned.tier&&ii!==active.owned.item;
+                  const canSwitch=sameTierOther&&cash>=item.cost;
+                  return(<div key={ii} className={canBuy||canSwitch?"si":""} onClick={()=>(canBuy||canSwitch)&&buyItem(active.type,ti,ii)} style={{
+                    minWidth:130,maxWidth:160,...P,padding:"10px",
+                    borderColor:isCurrent?"rgba(52,211,153,.5)":canBuy?"rgba(129,140,248,.4)":"rgba(255,255,255,.06)",
+                    opacity:tooLow?.35:(!canBuy&&!isCurrent&&!canSwitch)?.5:1,
+                    cursor:canBuy||canSwitch?"pointer":"default",
+                    background:isCurrent?"rgba(52,211,153,.08)":"rgba(255,255,255,.03)",
+                  }}>
+                    <div style={{fontSize:13,fontWeight:800,color:isCurrent?"#34d399":"#fff",marginBottom:3}}>{item.name}</div>
+                    <div style={{fontSize:10,color:"rgba(255,255,255,.4)",lineHeight:1.4,marginBottom:4}}>{item.desc}</div>
+                    {isCurrent?<div style={{fontSize:10,color:"#34d399",fontWeight:700}}>✓ 当前</div>:
+                    item.cost===0?<div style={{fontSize:10,color:"rgba(255,255,255,.3)"}}>免费</div>:
+                    <div style={{fontSize:11,fontWeight:700,color:canBuy||canSwitch?"#818cf8":"rgba(255,255,255,.3)"}}>¥{fmt(item.cost)}</div>}
+                  </div>);
+                })}
+              </div>
+            </div>);
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // === PAGES ===
+  if(phase==="menu")return(
+    <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#0a0a1a,#1a1a3e,#0d1b2a)",color:"#fff",fontFamily:"'Nunito',system-ui,sans-serif",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
+      <style>{CSS}</style>
+      <div style={{textAlign:"center",animation:"fadeIn .6s"}}><div style={{fontSize:56,marginBottom:12}}>🚀</div>
+        <h1 style={{fontSize:"clamp(28px,7vw,40px)",fontWeight:900,margin:"0 0 8px",background:"linear-gradient(135deg,#818cf8,#c084fc,#fb7185)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>创业人生</h1>
+        <p style={{color:"rgba(255,255,255,.5)",fontSize:15,margin:"0 0 32px",lineHeight:1.6}}>从车库到IPO，书写创业传奇<br/><span style={{fontSize:12,opacity:.6}}>AI驱动 · 每局全新故事</span></p>
+        <button onClick={doGacha} style={{padding:"16px 48px",fontSize:18,fontWeight:900,color:"#0a0a1a",background:"linear-gradient(135deg,#818cf8,#a78bfa)",border:"none",borderRadius:50,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 6px 30px rgba(129,140,248,.5)",animation:"pulse 2s infinite"}}>🎲 开启命运</button>
+        
+      </div>
+    </div>
+  );
+
+  if(phase==="gacha"){const d=gachaState==="reveal"?bg:BACKGROUNDS[gachaIdx];return(
+    <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#0a0a1a,#1a1a3e,#0d1b2a)",color:"#fff",fontFamily:"'Nunito',system-ui,sans-serif",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
+      <style>{CSS}</style>
+      <h2 style={{fontSize:20,fontWeight:900,color:"rgba(255,255,255,.7)",margin:"0 0 24px"}}>{gachaState==="rolling"?"🎲 命运之轮...":"🎊 命运已定！"}</h2>
+      <div style={{width:"min(85vw,340px)",...P,padding:"32px 24px",textAlign:"center",borderColor:gachaState==="reveal"?d?.color+"88":"rgba(255,255,255,.15)",animation:gachaState==="rolling"?"shake .15s infinite":"fadeIn .6s",boxShadow:gachaState==="reveal"?`0 0 40px ${d?.color}44`:"none"}}>
+        <div style={{fontSize:64,marginBottom:16}}>{d?.icon}</div>
+        <div style={{fontSize:24,fontWeight:900,color:gachaState==="reveal"?d?.color:"#fff"}}>{d?.name}</div>
+        {gachaState==="reveal"&&<div style={{animation:"fadeIn .5s .2s both",marginTop:12}}>
+          <p style={{fontSize:14,color:"rgba(255,255,255,.6)",lineHeight:1.8,margin:"0 0 16px"}}>{d?.desc}</p>
+          <div style={{display:"flex",gap:12,justifyContent:"center",marginBottom:12,flexWrap:"wrap"}}>
+            <div style={{padding:"6px 14px",borderRadius:10,background:`${d?.color}22`,border:`1px solid ${d?.color}44`,fontSize:13,fontWeight:700,color:d?.color}}>💰¥{fmt(d?.cash)}</div>
+            <div style={{padding:"6px 14px",borderRadius:10,background:`${d?.color}22`,border:`1px solid ${d?.color}44`,fontSize:13,fontWeight:700,color:d?.color}}>🤝人脉{d?.connections}</div>
+          </div>
+          <div style={{padding:"8px 16px",borderRadius:10,background:"rgba(255,255,255,.05)",fontSize:13,color:"rgba(255,255,255,.5)"}}>🏷️<span style={{color:d?.color,fontWeight:800}}>{d?.trait}</span>—{d?.traitDesc}</div>
+        </div>}
+      </div>
+      {gachaState==="reveal"&&<div style={{marginTop:24,display:"flex",gap:12,animation:"fadeIn .5s .5s both"}}>
+        <button onClick={()=>setPhase("industry")} style={{padding:"14px 36px",fontSize:16,fontWeight:900,color:"#0a0a1a",background:`linear-gradient(135deg,${d?.color},${d?.color}cc)`,border:"none",borderRadius:50,cursor:"pointer",fontFamily:"inherit"}}>✅ 接受</button>
+        <button onClick={()=>{setGachaState("idle");doGacha();}} style={{padding:"14px 36px",fontSize:16,fontWeight:900,color:"rgba(255,255,255,.5)",background:"transparent",border:"2px solid rgba(255,255,255,.15)",borderRadius:50,cursor:"pointer",fontFamily:"inherit"}}>🔄 重抽</button>
+      </div>}
+    </div>
+  );}
+
+  if(phase==="industry")return(
+    <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#0a0a1a,#1a1a3e,#0d1b2a)",color:"#fff",fontFamily:"'Nunito',system-ui,sans-serif",display:"flex",flexDirection:"column",alignItems:"center",padding:24}}>
+      <style>{CSS}</style>
+      <div style={{...P,padding:"10px 18px",marginBottom:16,borderColor:bg?.color+"44",display:"flex",alignItems:"center",gap:10}}>
+        <span style={{fontSize:24}}>{bg?.icon}</span>
+        <div><div style={{fontSize:13,fontWeight:800,color:bg?.color}}>{bg?.name}</div><div style={{fontSize:11,color:"rgba(255,255,255,.4)"}}>💰¥{fmt(bg?.cash)} 🤝{bg?.connections} {bg?.trait}</div></div>
+      </div>
+      <div style={{...P,width:"min(90vw,500px)",marginBottom:16}}>
+        <div style={{fontSize:13,color:"rgba(255,255,255,.5)",marginBottom:8,fontWeight:700}}>公司名称</div>
+        <input type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="例如：星辰科技..." maxLength={20} style={{width:"100%",padding:"12px 16px",borderRadius:12,boxSizing:"border-box",border:"2px solid rgba(255,255,255,.15)",background:"rgba(255,255,255,.08)",color:"#fff",fontSize:16,fontFamily:"inherit",outline:"none"}}/>
+      </div>
+      <div style={{width:"min(90vw,500px)"}}>
+        <div style={{fontSize:13,color:"rgba(255,255,255,.5)",marginBottom:12,fontWeight:700,textAlign:"center"}}>选择赛道</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10}}>
+          {INDUSTRIES.map((x,i)=>(<div key={x.id} className="ic" onClick={()=>{if(!name.trim())setName("创新科技");startGame(x);}} style={{...P,padding:14,position:"relative",animation:`fadeIn .3s ${.03*i}s both`}}>
+            {x.hot&&<div style={{position:"absolute",top:8,right:8,background:"linear-gradient(135deg,#ef4444,#f97316)",color:"#fff",fontSize:9,padding:"2px 6px",borderRadius:6,fontWeight:800}}>🔥</div>}
+            <div style={{fontSize:28,marginBottom:4}}>{x.icon}</div>
+            <div style={{fontSize:14,fontWeight:800}}>{x.name}</div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,.4)",lineHeight:1.4}}>{x.desc}</div>
+            <div style={{fontSize:10,color:"rgba(255,255,255,.3)",marginTop:4}}>{x.difficulty}</div>
+          </div>))}
+        </div>
+      </div>
+    </div>
+  );
+
+  if(phase==="playing")return(
+    <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#0a0a1a,#1a1a3e,#0d1b2a)",color:"#fff",fontFamily:"'Nunito',system-ui,sans-serif",display:"flex",flexDirection:"column",alignItems:"center",padding:16}}>
+      <style>{CSS}</style>
+      {popup&&popup.type==="milestone"&&<Popup onClose={()=>setPopup(null)} border="#fbbf24"><div style={{fontSize:48,marginBottom:8}}>🏆</div><div style={{fontSize:18,fontWeight:900,color:"#fbbf24",marginBottom:4}}>里程碑！</div><div style={{fontSize:15,color:"rgba(255,255,255,.8)",fontWeight:700}}>{popup.text}</div></Popup>}
+      {popup&&popup.type==="purchase"&&<Popup onClose={()=>setPopup(null)} border="#818cf8"><div style={{fontSize:56,marginBottom:8}}>{popup.icon}</div><div style={{fontSize:16,fontWeight:900,color:"#818cf8",marginBottom:4}}>成功购入！</div><div style={{fontSize:20,color:"#fff",fontWeight:800}}>{popup.name}</div><div style={{fontSize:12,color:"rgba(255,255,255,.5)",marginTop:4}}>{popup.desc}</div><div style={{fontSize:13,color:"#ef4444",marginTop:6,fontWeight:700}}>-¥{fmt(popup.cost)}</div></Popup>}
+      {showSurv&&<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",zIndex:998,background:"rgba(0,0,0,.7)",backdropFilter:"blur(5px)"}}><div style={{width:"min(90vw,440px)",...P,padding:24,animation:"fadeIn .4s",border:"2px solid rgba(239,68,68,.3)"}}><div style={{textAlign:"center",marginBottom:16}}><div style={{fontSize:40}}>🆘</div><div style={{fontSize:18,fontWeight:900,color:"#ef4444"}}>现金告急！</div><div style={{fontSize:12,color:"rgba(255,255,255,.4)",marginTop:4}}>负债¥{fmt(debt)} 已续命{survCnt}次</div></div><div style={{display:"flex",flexDirection:"column",gap:8,maxHeight:300,overflowY:"auto"}}>{SURV.map((o,i)=>{if(o.ct==="sellH"&&ownedH.tier<=1)return null;if(o.ct==="sellC"&&ownedC.tier<=0)return null;const ok=conn>=o.cq&&rep>=o.rq;const amt=o.ct==="sellH"?(HOUSING_TIERS[ownedH.tier].items[ownedH.item].cost*0.7||50000):o.ct==="sellC"?(CAR_TIERS[ownedC.tier].items[ownedC.item].cost*0.6||20000):(bg?.borrow||100000)*(o.am||1)*(1+fr*0.5);return(<div key={i} className={ok?"ob":""} onClick={()=>ok&&execSurv(o)} style={{...P,padding:"12px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",borderColor:ok?"rgba(239,68,68,.3)":"rgba(255,255,255,.06)",opacity:ok?1:.4,cursor:ok?"pointer":"default"}}><div><div style={{fontSize:14,fontWeight:800}}>{o.i}{o.n}</div><div style={{fontSize:11,color:"rgba(255,255,255,.45)"}}>{o.d}</div>{!ok&&<div style={{fontSize:10,color:"#ef4444"}}>需人脉≥{o.cq} 口碑≥{o.rq}</div>}</div><div style={{fontSize:14,fontWeight:800,color:"#34d399",marginLeft:10}}>+¥{fmt(amt)}</div></div>);}).filter(Boolean)}</div></div></div>}
+      {/* Header */}
+      <div style={{width:"min(92vw,520px)",display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+        <div><div style={{fontSize:"clamp(15px,4vw,19px)",fontWeight:900}}>{ind?.icon} {name}</div>
+          <div style={{fontSize:11,color:"rgba(255,255,255,.4)"}}>{stage.icon} {stage.name}·第{mo}月·{["未融资","天使轮","A轮","B轮","C轮","已IPO"][fr]}</div>
+          <div style={{fontSize:10,color:bg?.color,opacity:.7}}>{bg?.icon} {bg?.name}·{bg?.trait}</div>
+        </div>
+        <div style={{textAlign:"right"}}><div style={{fontSize:11,color:"rgba(255,255,255,.4)"}}>估值</div><div style={{fontSize:16,fontWeight:800,color:"#818cf8"}}>¥{fmt(val)}</div><div style={{fontSize:10,color:"rgba(255,255,255,.3)"}}>持股{eq.toFixed(1)}%</div>{debt>0&&<div style={{fontSize:10,color:"#ef4444"}}>负债¥{fmt(debt)}</div>}</div>
+      </div>
+      {/* Stats */}
+      <div style={{width:"min(92vw,520px)",display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:6,marginBottom:6}}>
+        {[{l:"现金",v:cash,i:"💰",c:cash<team*36000?"#ef4444":"#34d399",p:"¥"},{l:"用户",v:users,i:"👥",c:"#818cf8"},{l:"团队",v:team,i:"👨‍💻",c:"#fb923c"},{l:"口碑",v:Math.round(rep),i:"⭐",c:rep<30?"#ef4444":"#fbbf24"},{l:"人脉",v:Math.round(conn),i:"🤝",c:conn>50?"#a78bfa":"#94a3b8"}].map((s,i)=>(
+          <div key={i} style={{...P,padding:"8px 4px",textAlign:"center"}}><div style={{fontSize:16}}>{s.i}</div><AnimNum value={s.v} prefix={s.p||""} color={s.c}/><div style={{fontSize:9,color:"rgba(255,255,255,.3)"}}>{s.l}</div></div>))}
+      </div>
+      {/* Life status bar */}
+      <div style={{width:"min(92vw,520px)",display:"flex",gap:6,marginBottom:6}}>
+        {[{icon:HOUSING_TIERS[ownedH.tier].icon,name:curH.name},{icon:CAR_TIERS[ownedC.tier].icon,name:curC.name},{icon:LIFE_TIERS[ownedL.tier].icon,name:curL.name}].map((x,i)=>(
+          <div key={i} style={{flex:1,...P,padding:"5px 8px",display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:14}}>{x.icon}</span><span style={{fontSize:10,color:"rgba(255,255,255,.5)",fontWeight:700,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{x.name}</span></div>))}
+      </div>
+      <div style={{width:"min(92vw,520px)",display:"flex",gap:8,marginBottom:10}}>
+        <div style={{flex:1,fontSize:10,color:"rgba(255,255,255,.25)",textAlign:"center"}}>月支出¥{fmt(team*12000)}·可维持{Math.max(0,Math.floor(cash/(team*12000)))}月</div>
+        <button onClick={()=>setShowShop(!showShop)} style={{background:showShop?"rgba(129,140,248,.2)":"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.15)",color:showShop?"#818cf8":"rgba(255,255,255,.5)",padding:"4px 12px",borderRadius:8,fontSize:11,cursor:"pointer",fontFamily:"inherit",fontWeight:700,whiteSpace:"nowrap"}}>🛍️{showShop?"收起":"升级生活"}</button>
+      </div>
+      {showShop&&renderShop()}
+      {/* Competitors */}
+      <div style={{width:"min(92vw,520px)",marginBottom:10}}>
+        <div style={{fontSize:11,color:"rgba(255,255,255,.3)",marginBottom:6,fontWeight:700}}>🏆 竞争</div>
+        <div style={{display:"flex",gap:5}}>
+          <div style={{flex:1,...P,padding:"7px 8px",borderColor:"rgba(129,140,248,.3)"}}><div style={{fontSize:11,fontWeight:800,color:"#818cf8"}}>🏅{name}</div><div style={{fontSize:10,color:"rgba(255,255,255,.4)"}}>{fmtU(users)}用户</div></div>
+          {comps.map((c,i)=><div key={i} style={{flex:1,...P,padding:"7px 8px"}}><div style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,.5)"}}>{c.name}</div><div style={{fontSize:10,color:"rgba(255,255,255,.3)"}}>{fmtU(c.users)}</div></div>)}
+        </div>
+      </div>
+      {/* Event */}
+      <div style={{width:"min(92vw,520px)",marginBottom:12}}>
+        {loading?(<div style={{...P,padding:"40px 20px",textAlign:"center"}}><div style={{fontSize:32,marginBottom:12}}>📮</div><div style={{color:"rgba(255,255,255,.6)",fontSize:14,fontWeight:700}}>第{mo}个月</div><div style={{marginTop:8,fontSize:12,color:"rgba(255,255,255,.3)"}}>生成中<span style={{animation:"dot 1s infinite"}}>.</span><span style={{animation:"dot 1s infinite .3s"}}>.</span><span style={{animation:"dot 1s infinite .6s"}}>.</span></div></div>
+        ):evt?(<div style={{...P,animation:"fadeIn .5s",borderColor:({crisis:"rgba(239,68,68,.3)",opportunity:"rgba(52,211,153,.3)",funding:"rgba(129,140,248,.3)",family:"rgba(251,191,36,.3)",competitor:"rgba(249,115,22,.3)",newCompetitor:"rgba(225,29,72,.3)"})[evt.type]||"rgba(255,255,255,.1)"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}><span style={{fontSize:32}}>{evt.emoji}</span><div><div style={{fontSize:10,fontWeight:700,color:({crisis:"#ef4444",opportunity:"#34d399",funding:"#818cf8",family:"#fbbf24",competitor:"#f97316",newCompetitor:"#e11d48",decision:"#a78bfa"})[evt.type]||"#a78bfa",marginBottom:2}}>{({crisis:"⚠️危机",opportunity:"💡机遇",decision:"🤔决策",competitor:"⚔️竞争",newCompetitor:"🆕新对手入场",funding:"💰融资",family:"👨‍👩‍👧家庭"})[evt.type]||"📋事件"}</div><div style={{fontSize:18,fontWeight:900}}>{evt.title}</div></div></div>
+          <div style={{fontSize:14,color:"rgba(255,255,255,.7)",lineHeight:1.8,marginBottom:16,padding:"12px 14px",background:"rgba(255,255,255,.04)",borderRadius:10}}>{evt.description}</div>
+        {evt.multiSelect&&<div style={{fontSize:12,color:"#a78bfa",marginBottom:8,fontWeight:700,textAlign:"center"}}>🔀 可多选，但贪心有代价…</div>}
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {evt.options?.map((o,i)=>(<div key={i} className="ob" onClick={()=>evt.multiSelect?setSelOpts(p=>{const n=new Set(p);n.has(i)?n.delete(i):n.add(i);return n;}):decide([o])} style={{...P,padding:"14px 16px",borderColor:evt.multiSelect&&selOpts.has(i)?"rgba(129,140,248,.6)":"rgba(255,255,255,.12)",background:evt.multiSelect&&selOpts.has(i)?"rgba(129,140,248,.1)":"transparent",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div style={{flex:1}}><div style={{fontSize:14,fontWeight:800,marginBottom:3}}>{evt.multiSelect?(selOpts.has(i)?"☑️":"⬜"):["🅰️","🅱️","🅲️"][i]} {o.text}</div><div style={{fontSize:12,color:"rgba(255,255,255,.45)",lineHeight:1.5}}>{o.detail}</div></div>
+              <div style={{fontSize:10,padding:"3px 8px",borderRadius:6,marginLeft:8,whiteSpace:"nowrap",fontWeight:700,background:o.risk==="high"?"rgba(239,68,68,.2)":o.risk==="medium"?"rgba(251,191,36,.2)":"rgba(52,211,153,.2)",color:o.risk==="high"?"#fca5a5":o.risk==="medium"?"#fde68a":"#6ee7b7"}}>{{low:"低风险",medium:"中风险",high:"高风险"}[o.risk]||"?"}</div>
+            </div>))}
+          </div>
+        </div>):null}
+      </div>
+      {miles.length>0&&<div style={{width:"min(92vw,520px)",marginBottom:8,fontSize:12,color:"#fbbf24",fontWeight:700,textAlign:"center"}}>🏆{miles[miles.length-1].text}</div>}
+      <button onClick={()=>setShowHist(!showHist)} style={{background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.1)",color:"rgba(255,255,255,.5)",padding:"8px 20px",borderRadius:10,fontSize:12,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>{showHist?"收起":"📜历程"}({history.length})</button>
+      {showHist&&history.length>0&&<div style={{width:"min(92vw,520px)",marginTop:10,...P,maxHeight:250,overflowY:"auto",padding:12}}>{history.slice().reverse().map((e,i)=><div key={i} style={{fontSize:12,color:"rgba(255,255,255,.5)",padding:"6px 0",borderBottom:i<history.length-1?"1px solid rgba(255,255,255,.06)":"none"}}><span style={{color:({family:"#fbbf24",crisis:"#ef4444",opportunity:"#34d399",funding:"#818cf8",competitor:"#f97316",newCompetitor:"#e11d48"})[e.type]||"rgba(255,255,255,.3)"}}>{e.emoji}第{e.mo}月</span> {e.title}→<span style={{color:"#818cf8"}}>{e.choice}</span></div>)}</div>}
+    </div>
+  );
+
+  if(phase==="gameover")return(
+    <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#1a0a0a,#2a1515,#1a0a0a)",color:"#fff",fontFamily:"'Nunito',system-ui,sans-serif",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,textAlign:"center"}}>
+      <style>{CSS}</style>
+      <div style={{animation:"fadeIn .6s"}}><div style={{fontSize:64,marginBottom:16}}>💸</div>
+        <h2 style={{fontSize:28,fontWeight:900,color:"#ef4444",margin:"0 0 8px"}}>创业失败</h2>
+        <p style={{color:"rgba(255,255,255,.5)",fontSize:14,marginBottom:20}}>{overMsg}</p>
+        <div style={{...P,padding:20,maxWidth:380,margin:"0 auto 24px",textAlign:"left"}}><div style={{fontSize:13,color:"rgba(255,255,255,.6)",lineHeight:2.2}}>
+          {bg?.icon}{bg?.name}→{ind?.icon}{name}<br/>📅{mo}月 👥{fmtU(users)} {team}人<br/>💰{["未融资","天使轮","A轮","B轮","C轮","IPO"][fr]}<br/>🚗{curC.name} 🏠{curH.name}<br/>🏆{miles.length}个里程碑</div></div>
+        <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
+          <button onClick={()=>setPhase("menu")} style={{padding:"14px 32px",fontSize:15,fontWeight:800,color:"#fff",background:"linear-gradient(135deg,#ef4444,#dc2626)",border:"none",borderRadius:14,cursor:"pointer",fontFamily:"inherit"}}>😤东山再起</button>
+          <button onClick={()=>navigator.clipboard?.writeText(`🚀创业人生\n${bg?.icon}${bg?.name}→${ind?.icon}${name}\n坚持${mo}月后破产💸\n🚗${curC.name} 🏠${curH.name}\n你能更好吗？`)} style={{padding:"14px 32px",fontSize:15,fontWeight:800,color:"rgba(255,255,255,.6)",background:"transparent",border:"2px solid rgba(255,255,255,.2)",borderRadius:14,cursor:"pointer",fontFamily:"inherit"}}>📤分享</button>
+        </div></div>
+    </div>
+  );
+
+  if(phase==="won")return(
+    <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#0a1a0a,#1a2e1a,#0a1a2e)",color:"#fff",fontFamily:"'Nunito',system-ui,sans-serif",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,textAlign:"center"}}>
+      <style>{CSS}</style>
+      {Array.from({length:15}).map((_,i)=><div key={i} style={{position:"fixed",left:`${Math.random()*100}%`,top:-20,fontSize:20,animation:`confetti ${3+Math.random()*3}s linear ${Math.random()*2}s infinite`,pointerEvents:"none"}}>{["🎉","🎊","✨","🌟","🔔","💰"][i%6]}</div>)}
+      <div style={{animation:"fadeIn .6s",position:"relative",zIndex:1}}><div style={{fontSize:64,marginBottom:16}}>🔔</div>
+        <h2 style={{fontSize:32,fontWeight:900,margin:"0 0 8px",background:"linear-gradient(135deg,#fbbf24,#f59e0b)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>成功上市！</h2>
+        <p style={{color:"rgba(255,255,255,.6)",fontSize:16,marginBottom:24}}>「{name}」IPO🎉</p>
+        <div style={{...P,padding:20,maxWidth:400,margin:"0 auto 24px",textAlign:"left"}}><div style={{fontSize:14,color:"rgba(255,255,255,.7)",lineHeight:2.2}}>
+          {bg?.icon}{bg?.name}({bg?.trait})→{ind?.icon}{name}<br/>📅{mo}月 💰¥{fmt(val)} 持股{eq.toFixed(1)}%<br/>👥{fmtU(users)}用户 {team}人 ⭐{Math.round(rep)}<br/>🚗{curC.name} 🏠{curH.name} 🍽️{curL.name}<br/>🏆{miles.length}个里程碑</div></div>
+        <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
+          <button onClick={()=>setPhase("menu")} style={{padding:"14px 32px",fontSize:15,fontWeight:800,color:"#0a0a1a",background:"linear-gradient(135deg,#fbbf24,#f59e0b)",border:"none",borderRadius:14,cursor:"pointer",fontFamily:"inherit"}}>🚀再创辉煌</button>
+          <button onClick={()=>navigator.clipboard?.writeText(`🚀创业人生🔔\n${bg?.icon}${bg?.name}→${mo}月IPO！\n「${name}」估值¥${fmt(val)}\n🚗${curC.name} 🏠${curH.name} 🍽️${curL.name}\n从${bg?.name}到CEO的逆袭！`)} style={{padding:"14px 32px",fontSize:15,fontWeight:800,color:"#fbbf24",background:"transparent",border:"2px solid rgba(251,191,36,.4)",borderRadius:14,cursor:"pointer",fontFamily:"inherit"}}>📤敲钟炫耀</button>
+        </div></div>
+    </div>
+  );
+  return null;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(StartupLife));
+</script></body></html>
