@@ -1,15 +1,4 @@
-<!DOCTYPE html><html><head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Startup Life Game</title>
-<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#0a0a1a;overflow-x:hidden}</style>
-</head><body><div id="root"></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
-<script type="text/babel">
-const{useState,useCallback,useRef,useEffect}=React;
-
+<!DOCTYPE html><html lang=zh-CN><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"><title>Startup Life</title><style>*{margin:0;padding:0;box-sizing:border-box}body{background:#0a0a1a;overflow-x:hidden}#root{min-height:100vh}</style></head><body><div id=root></div><script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script><script type="text/babel">const{useState,useCallback,useRef,useEffect}=React;
 
 const BACKGROUNDS = [
   { id:"rural",name:"农村家庭",icon:"🌾",desc:"父母务农，家境贫寒。你是全村的希望。",cash:30000,connections:5,trait:"吃苦耐劳",traitDesc:"逆境中额外坚韧",color:"#8B7355" },
@@ -620,6 +609,4 @@ options:[{text:"\u7acb\u523b\u8bf7\u5f8b\u5e08\u5408\u89c4",detail:"\u82b1\u94b1
   );
   return null;
 }
-
-ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(StartupLife));
-</script></body></html>
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(StartupLife));</script></body></html>
